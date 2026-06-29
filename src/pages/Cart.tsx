@@ -6,7 +6,15 @@ import EmptyCartSVG from "@/components/ui/EmptyCartSVG";
 
 export default function Cart() {
   const { items, removeItem, updateQuantity, getTotal } = useCartStore();
-  const user = useAuthStore(state => state.user);
+  const { user, initialized } = useAuthStore();
+
+  if (!initialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-ivory">
+        <p className="text-charcoal/50 font-medium tracking-wide">Loading account...</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return <Navigate to="/auth" state={{ from: { pathname: "/cart" } }} replace />;

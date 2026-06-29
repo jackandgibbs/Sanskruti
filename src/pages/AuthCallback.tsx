@@ -9,12 +9,12 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) navigate("/dashboard", { replace: true });
+      if (session) navigate("/", { replace: true });
     });
 
     // Fallback in case the event already fired before this mounted.
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate("/dashboard", { replace: true });
+      if (data.session) navigate("/", { replace: true });
     });
 
     return () => sub.subscription.unsubscribe();

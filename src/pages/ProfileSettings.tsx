@@ -6,10 +6,18 @@ import { toast } from "sonner";
 import { updateProfile } from "@/lib/profile";
 
 export default function ProfileSettings() {
-  const { user, updateUser } = useAuthStore();
+  const { user, updateUser, initialized } = useAuthStore();
   const [editing, setEditing] = useState<null | "phone" | "gender">(null);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
+
+  if (!initialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-ivory">
+        <p className="text-charcoal/50 font-medium tracking-wide">Loading account...</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return <Navigate to="/auth" replace />;

@@ -10,7 +10,7 @@ export default function AdminCustomers() {
     // Requires the signed-in user to be flagged is_admin (see RLS in schema.sql).
     supabase
       .from("profiles")
-      .select("id, customer_id, first_name, last_name, phone, created_at")
+      .select("id, customer_id, first_name, last_name, phone, created_at, orders(count)")
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
         if (error) {
@@ -25,6 +25,7 @@ export default function AdminCustomers() {
             lastName: p.last_name,
             phone: p.phone ? `+91 ${p.phone}` : "—",
             joined: p.created_at ? new Date(p.created_at).toLocaleDateString("en-IN") : "—",
+            totalOrders: (p.orders as any)?.[0]?.count ?? 0,
           }))
         );
       });
@@ -60,14 +61,14 @@ export default function AdminCustomers() {
           </thead>
           <tbody className="divide-y divide-black/5">
             {customers.map((c) => (
-              <tr key={c.id} className="hover:bg-white/80 transition-colors group">
+              <tr key={c.uid} className="hover:bg-white/80 transition-colors group">
                 <td className="p-6 font-bold text-[#1a3326]">{c.id}</td>
                 <td className="p-6 font-medium text-charcoal/80">{c.firstName} {c.lastName}</td>
                 <td className="p-6 text-charcoal/50">{c.phone}</td>
                 <td className="p-6 text-charcoal/50">{c.joined}</td>
                 <td className="p-6 text-charcoal/50">{c.totalOrders}</td>
                 <td className="p-6 text-right">
-                  <Link to={`/admin/customers/${c.id}`} className="text-gold hover:text-forest transition-colors font-bold text-xs uppercase tracking-widest">
+                  <Link to={`/admin/customers/${c.uid}`} className="text-gold hover:text-forest transition-colors font-bold text-xs uppercase tracking-widest">
                     View Profile
                   </Link>
                 </td>

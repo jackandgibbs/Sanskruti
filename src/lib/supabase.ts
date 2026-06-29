@@ -19,10 +19,14 @@ if (!isSupabaseConfigured) {
   );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true, // needed to finish the Google OAuth redirect
-  },
-});
+export const supabase = createClient(
+  supabaseUrl || "https://placeholder-project-ref.supabase.co",
+  supabaseAnonKey || "placeholder-anon-key",
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true, // needed to finish the Google OAuth redirect
+    },
+  }
+);

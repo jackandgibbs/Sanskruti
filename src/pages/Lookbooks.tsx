@@ -5,8 +5,16 @@ import { ArrowLeft, Trash2, Library, X } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Lookbooks() {
-  const { user } = useAuthStore();
+  const { user, initialized } = useAuthStore();
   const { lookbooks, deleteLookbook, removeItemFromLookbook } = useLookbookStore();
+
+  if (!initialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-ivory">
+        <p className="text-charcoal/50 font-medium tracking-wide">Loading account...</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return <Navigate to="/auth" state={{ from: { pathname: "/dashboard/lookbooks" } }} replace />;

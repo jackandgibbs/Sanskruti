@@ -54,6 +54,8 @@ function profileToUser(row: any, email?: string): User {
   };
 }
 
+let initStarted = false;
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -76,6 +78,9 @@ export const useAuthStore = create<AuthState>()(
         })),
 
       initAuth: () => {
+        if (initStarted) return;
+        initStarted = true;
+
         // Hydrate the store from a Supabase session (fetches the profile row).
         const hydrate = async (session: Session | null) => {
           if (!session?.user) {
@@ -112,9 +117,6 @@ export const useAuthStore = create<AuthState>()(
           void hydrate(session);
           if (!session) useCartStore.getState().clearCart();
         });
-
-        // Guard against calling initAuth twice.
-        if (!get().initialized) set({ initialized: false });
       },
     }),
     {

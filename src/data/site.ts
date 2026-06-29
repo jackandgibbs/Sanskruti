@@ -16,6 +16,8 @@ export type Product = {
   inStock: boolean;
   bestSeller?: boolean;
   newArrival?: boolean;
+  sku?: string;
+  description?: string;
 };
 
 export const NAV_LINKS = [
@@ -26,6 +28,7 @@ export const NAV_LINKS = [
   { label: "Kurtis", to: "/kurtis" },
   { label: "Festive", to: "/festive" },
   { label: "Wedding", to: "/wedding" },
+  { label: "Designer", to: "/designer" },
   { label: "About", to: "/about" },
   { label: "Contact", to: "/contact" },
 ];

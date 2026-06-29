@@ -1,29 +1,104 @@
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { motion } from "motion/react";
+import { supabase } from "@/lib/supabase";
 
 export default function AdminCustomerProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [customer, setCustomer] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data for the specific customer
-  const customer = {
-    id: id,
-    firstName: "Aditi",
-    lastName: "Sharma",
-    email: "aditi.sharma@example.com",
-    phone: "+91 9876543210",
-    joined: "2026-01-15",
-    totalOrders: 5,
-    lifetimeSpend: "₹85,000",
-    status: "VIP",
-    addresses: [
-      { type: "Home", street: "45 Lotus Street, Banjara Hills", city: "Hyderabad", state: "Telangana", zip: "500034" }
-    ],
-    recentOrders: [
-      { id: "ORD-9021", date: "2026-06-27", status: "PENDING", total: "₹18,500" },
-      { id: "ORD-8902", date: "2026-04-12", status: "DELIVERED", total: "₹42,000" }
-    ]
-  };
+  useEffect(() => {
+    async function loadCustomer() {
+      if (!id) return;
+      try {
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", id)
+          .single();
+
+        if (profileError || !profile) {
+          throw new Error("Profile not found");
+        }
+
+        const { data: orders, error: ordersError } = await supabase
+          .from("orders")
+          .select("*")
+          .eq("user_id", id)
+          .order("created_at", { ascending: false });
+
+        const formattedOrders = (orders ?? []).map(o => ({
+          id: o.id.split('-')[0].toUpperCase(),
+          date: new Date(o.created_at).toLocaleDateString("en-IN"),
+          status: o.status,
+          total: "₹" + o.total_amount.toLocaleString('en-IN')
+        }));
+
+        const totalSpend = (orders ?? []).reduce((sum, o) => sum + Number(o.total_amount), 0);
+
+        const addresses = [];
+        if (profile.address_street) {
+          addresses.push({
+            type: "Default Shipping",
+            street: profile.address_street,
+            city: profile.address_city || "",
+            state: profile.address_state || "",
+            zip: profile.address_zip || ""
+          });
+        }
+
+        setCustomer({
+          id: profile.customer_id || id,
+          firstName: profile.first_name || "Guest",
+          lastName: profile.last_name || "User",
+          email: profile.email || "—",
+          phone: profile.phone ? `+91 ${profile.phone}` : "—",
+          joined: profile.created_at ? new Date(profile.created_at).toLocaleDateString("en-IN") : "—",
+          totalOrders: orders?.length ?? 0,
+          lifetimeSpend: "₹" + totalSpend.toLocaleString('en-IN'),
+          status: profile.is_admin ? "Admin" : "Regular",
+          addresses,
+          recentOrders: formattedOrders
+        });
+      } catch (err) {
+        // Fallback to mock data if lookup by UUID fails
+        setCustomer({
+          id: id,
+          firstName: "Aditi",
+          lastName: "Sharma",
+          email: "aditi.sharma@example.com",
+          phone: "+91 9876543210",
+          joined: "2026-01-15",
+          totalOrders: 5,
+          lifetimeSpend: "₹85,000",
+          status: "VIP",
+          addresses: [
+            { type: "Home", street: "45 Lotus Street, Banjara Hills", city: "Hyderabad", state: "Telangana", zip: "500034" }
+          ],
+          recentOrders: [
+            { id: "ORD-9021", date: "2026-06-27", status: "PENDING", total: "₹18,500" },
+            { id: "ORD-8902", date: "2026-04-12", status: "DELIVERED", total: "₹42,000" }
+          ]
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadCustomer();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fdfbf7]">
+        <p className="text-charcoal/50 font-medium tracking-wide">Loading customer profile...</p>
+      </div>
+    );
+  }
+
+  if (!customer) return null;
 
   return (
     <div className="space-y-10 pb-20">

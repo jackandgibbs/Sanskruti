@@ -6,7 +6,7 @@ import { PRODUCTS } from "@/data/site";
 import { fetchUserOrders } from "@/lib/orders";
 
 export default function Orders() {
-  const { user } = useAuthStore();
+  const { user, initialized } = useAuthStore();
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -18,6 +18,14 @@ export default function Orders() {
       .catch((err) => console.error("Failed to fetch orders", err))
       .finally(() => setIsLoading(false));
   }, [user]);
+
+  if (!initialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-ivory">
+        <p className="text-charcoal/50 font-medium tracking-wide">Loading account...</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return <Navigate to="/auth" replace />;

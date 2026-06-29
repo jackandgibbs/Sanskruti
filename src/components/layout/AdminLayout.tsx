@@ -1,9 +1,23 @@
-import { Link, Outlet, useLocation } from "react-router";
+import { Link, Outlet, useLocation, Navigate } from "react-router";
 import { motion } from "motion/react";
 import Logo from "@/components/Logo";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function AdminLayout() {
   const { pathname } = useLocation();
+  const { user, initialized } = useAuthStore();
+
+  if (!initialized) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#fdfbf7]">
+        <p className="text-charcoal/50 font-medium tracking-wide">Verifying authorization...</p>
+      </div>
+    );
+  }
+
+  if (!user || !user.isAdmin) {
+    return <Navigate to="/auth" state={{ from: { pathname } }} replace />;
+  }
 
   const links = [
     { name: "Dashboard", href: "/admin" },

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useLocation } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Menu, X, Search, Heart, User, ShoppingBag, Package, ShieldCheck, MapPin, HeadphonesIcon, CreditCard, Crown, Gift, MessageSquare, History, ChevronDown, LogOut } from "lucide-react";
-import { NAV_LINKS } from "@/data/site";
+import { NAV_LINKS, PRODUCTS, Product } from "@/data/site";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
 import { useCartStore } from "@/store/useCartStore";
@@ -10,7 +10,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 
 const ANNOUNCEMENT_MESSAGES = [
   "FREE SHIPPING ON ORDERS ABOVE ₹999",
-  "18K GOLD PLATED • WATERPROOF • TARNISH-FREE",
+  "HANDCRAFTED HERITAGE WEAVES • SILK & COTTON COLLECTIONS",
   "EASY 15-DAY RETURNS & EXCHANGES",
 ];
 
@@ -35,12 +35,32 @@ export default function Navbar() {
   const [searchCategoryOpen, setSearchCategoryOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [showSearchOverlay, setShowSearchOverlay] = useState(false);
+
   const { pathname } = useLocation();
   const { user, logout } = useAuthStore();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchCategoryRef = useRef<HTMLDivElement>(null);
 
-  const SEARCH_CATEGORIES = ["All Categories", "Sarees", "Lehengas", "Jewelry"];
+  const SEARCH_CATEGORIES = ["All Categories", "Sarees", "Lehengas", "Kurtis", "Festive", "Wedding", "Designer"];
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    if (val.trim().length > 1) {
+      const filtered = PRODUCTS.filter(p => 
+        (p.name.toLowerCase().includes(val.toLowerCase()) ||
+        p.category.toLowerCase().includes(val.toLowerCase()) ||
+        (p.fabric && p.fabric.toLowerCase().includes(val.toLowerCase()))) &&
+        (selectedCategory === "All Categories" || p.category.toLowerCase() === selectedCategory.toLowerCase())
+      ).slice(0, 5);
+      setSearchResults(filtered);
+    } else {
+      setSearchResults([]);
+    }
+  };
 
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 40);
@@ -178,12 +198,32 @@ export default function Navbar() {
 
                 <input 
                   type="text" 
-                  placeholder="Search for premium ethnic wear, jewelry..." 
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  placeholder="Search for premium ethnic wear..." 
                   className="flex-1 h-full px-4 outline-none text-sm font-body text-charcoal bg-white"
                 />
                 <button className="h-full px-6 bg-forest text-ivory hover:bg-gold transition-colors flex items-center justify-center">
                   <Search size={20} strokeWidth={2} />
                 </button>
+                {searchResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-border shadow-xl py-2 z-[100] max-h-80 overflow-y-auto">
+                    {searchResults.map(p => (
+                      <Link 
+                        key={p.id} 
+                        to={`/product/${p.id}`}
+                        onClick={() => { setSearchQuery(""); setSearchResults([]); }}
+                        className="flex items-center gap-4 px-4 py-2 hover:bg-forest/5 transition-colors border-b last:border-0 border-border/40"
+                      >
+                        <img src={p.image} className="w-10 h-12 object-cover rounded-sm shadow-sm" alt="" />
+                        <div>
+                          <p className="text-sm font-semibold text-charcoal font-body">{p.name}</p>
+                          <p className="text-xs text-charcoal/60 uppercase tracking-widest font-body mt-0.5">{p.category} • ₹{p.price.toLocaleString('en-IN')}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -326,12 +366,53 @@ export default function Navbar() {
 
             {/* Right: Icon actions */}
             <div className="flex items-center gap-3 sm:gap-5 justify-end flex-1">
-              <button className={cn("relative p-1 transition-colors", scrolled || pathname !== "/" ? "text-charcoal/70 hover:text-forest" : "text-ivory hover:text-gold")} aria-label="Search">
-                <Search size={20} strokeWidth={1.5} />
-              </button>
-              <button className={cn("relative p-1 transition-colors hidden sm:block", scrolled || pathname !== "/" ? "text-charcoal/70 hover:text-forest" : "text-ivory hover:text-gold")} aria-label="Wishlist">
+              {showSearchOverlay ? (
+                <div className="relative flex items-center bg-white border border-charcoal/20 px-2 py-1 rounded-sm shadow-sm">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    placeholder="Search..."
+                    autoFocus
+                    className="w-32 sm:w-48 outline-none text-xs font-body text-charcoal bg-white pr-6"
+                  />
+                  <button 
+                    onClick={() => { setShowSearchOverlay(false); setSearchQuery(""); setSearchResults([]); }}
+                    className="absolute right-1 text-charcoal/40 hover:text-charcoal transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                  {searchResults.length > 0 && (
+                    <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-border shadow-xl py-2 z-[100] max-h-80 overflow-y-auto">
+                      {searchResults.map(p => (
+                        <Link 
+                          key={p.id} 
+                          to={`/product/${p.id}`}
+                          onClick={() => { setShowSearchOverlay(false); setSearchQuery(""); setSearchResults([]); }}
+                          className="flex items-center gap-3 px-3 py-1.5 hover:bg-forest/5 transition-colors border-b last:border-0 border-border/40"
+                        >
+                          <img src={p.image} className="w-8 h-10 object-cover rounded-sm shadow-sm" alt="" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-charcoal truncate font-body">{p.name}</p>
+                            <p className="text-[10px] text-charcoal/60 uppercase tracking-widest font-body mt-0.5">{p.category} • ₹{p.price.toLocaleString('en-IN')}</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setShowSearchOverlay(true)}
+                  className={cn("relative p-1 transition-colors", scrolled || pathname !== "/" ? "text-charcoal/70 hover:text-forest" : "text-ivory hover:text-gold")} 
+                  aria-label="Search"
+                >
+                  <Search size={20} strokeWidth={1.5} />
+                </button>
+              )}
+              <Link to="/dashboard/wishlist" className={cn("relative p-1 transition-colors hidden sm:block", scrolled || pathname !== "/" ? "text-charcoal/70 hover:text-forest" : "text-ivory hover:text-gold")} aria-label="Wishlist">
                 <Heart size={20} strokeWidth={1.5} />
-              </button>
+              </Link>
               <Link to="/auth" className={cn("relative p-1 transition-colors hidden sm:block", scrolled || pathname !== "/" ? "text-charcoal/70 hover:text-forest" : "text-ivory hover:text-gold")} aria-label="Account">
                 <User size={20} strokeWidth={1.5} />
               </Link>

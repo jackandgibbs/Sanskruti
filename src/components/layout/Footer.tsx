@@ -19,8 +19,8 @@ const HELP_LINKS = [
 ];
 
 const SOCIALS = [
-  { label: "Instagram", Icon: Instagram, href: "#" },
-  { label: "Facebook", Icon: Facebook, href: "#" },
+  { label: "Instagram", Icon: Instagram, href: "https://www.instagram.com/sanskruti_gujarat/" },
+  { label: "Facebook", Icon: Facebook, href: "https://www.facebook.com/" },
   {
     label: "Pinterest",
     Icon: () => (
@@ -41,9 +41,9 @@ const SOCIALS = [
         <circle cx="12" cy="12" r="3" />
       </svg>
     ),
-    href: "#",
+    href: "https://www.pinterest.com/",
   },
-  { label: "YouTube", Icon: Youtube, href: "#" },
+  { label: "YouTube", Icon: Youtube, href: "https://www.youtube.com/" },
 ];
 
 export default function Footer() {
@@ -165,7 +165,7 @@ export default function Footer() {
               ))}
             </div>
             <p className="text-ivory/40 text-[0.75rem] font-body mt-5 tracking-wide">
-              @sanskruti.official
+              @sanskruti_gujarat
             </p>
           </div>
         </div>

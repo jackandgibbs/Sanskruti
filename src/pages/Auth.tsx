@@ -38,7 +38,7 @@ export default function Auth() {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || "/dashboard";
+  const from = location.state?.from?.pathname || "/";
 
   // --- Username + password login -------------------------------------------
   const handleLogin = async (e: React.FormEvent) => {
@@ -164,7 +164,7 @@ export default function Auth() {
         <div className="absolute inset-0 bg-black/10 z-10" />
         <img
           src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1200&q=80"
-          alt="Premium Jewelry"
+          alt="Premium Handcrafted Saree"
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute top-10 left-10 z-20">

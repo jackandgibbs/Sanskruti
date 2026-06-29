@@ -59,7 +59,7 @@ export default function Checkout() {
       setOrderId(order.id);
       toast.success("Order placed successfully!");
       clearCart();
-      navigate("/dashboard/orders");
+      setStep("success");
     } catch (err: any) {
       toast.error(err?.message || "Failed to place order.");
     } finally {

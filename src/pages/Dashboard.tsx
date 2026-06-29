@@ -3,7 +3,15 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { LogOut, Package, ShieldCheck, MapPin, HeadphonesIcon, CreditCard, Heart, Crown, Gift, MessageSquare, History } from "lucide-react";
 
 export default function Dashboard() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, initialized } = useAuthStore();
+
+  if (!initialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-ivory">
+        <p className="text-charcoal/50 font-medium tracking-wide">Loading account...</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return <Navigate to="/auth" replace />;

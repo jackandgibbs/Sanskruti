@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation, Link } from "react-router";
 import { PRODUCTS, CATEGORIES } from "@/data/site";
 import ProductCard from "@/components/ui/ProductCard";
@@ -5,6 +6,7 @@ import ProductCard from "@/components/ui/ProductCard";
 export default function Category() {
   const { pathname } = useLocation();
   const name = pathname.replace('/', ''); // e.g. "sarees" or "new-arrivals"
+  const [sortBy, setSortBy] = useState("featured");
   
   // Clean category name (e.g. 'new-arrivals' -> 'New Arrivals')
   const formatName = (slug: string) => 
@@ -14,11 +16,23 @@ export default function Category() {
   const categoryDetails = CATEGORIES.find(c => c.name.toLowerCase() === formattedName.toLowerCase());
 
   // Filter local data
-  const products = PRODUCTS.filter(p => 
+  const baseProducts = PRODUCTS.filter(p => 
     name === 'new-arrivals' ? p.newArrival :
     name === 'best-sellers' ? p.bestSeller :
     p.category.toLowerCase() === formattedName.toLowerCase()
   );
+
+  // Sort products
+  const products = [...baseProducts].sort((a, b) => {
+    if (sortBy === "low-to-high") {
+      return a.price - b.price;
+    } else if (sortBy === "high-to-low") {
+      return b.price - a.price;
+    } else if (sortBy === "newest") {
+      return (b.newArrival ? 1 : 0) - (a.newArrival ? 1 : 0);
+    }
+    return 0; // featured (original order)
+  });
 
   return (
     <div className="min-h-screen bg-ivory pt-10 pb-24">
@@ -37,11 +51,15 @@ export default function Category() {
         <main className="w-full">
           <div className="flex justify-between items-center mb-8 border-b border-border pb-4">
             <span className="text-sm text-charcoal/60 font-body uppercase tracking-widest">{products.length} products</span>
-            <select className="bg-transparent text-sm p-2 outline-none font-body uppercase tracking-widest text-forest cursor-pointer">
-              <option>Sort by: Featured</option>
-              <option>Price: Low to High</option>
-              <option>Price: High to Low</option>
-              <option>Newest Arrivals</option>
+            <select 
+              value={sortBy} 
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-transparent text-sm p-2 outline-none font-body uppercase tracking-widest text-forest cursor-pointer"
+            >
+              <option value="featured">Sort by: Featured</option>
+              <option value="low-to-high">Price: Low to High</option>
+              <option value="high-to-low">Price: High to Low</option>
+              <option value="newest">Newest Arrivals</option>
             </select>
           </div>
 

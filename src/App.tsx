@@ -7,12 +7,6 @@ import Home from "@/pages/Home";
 import Placeholder from "@/pages/Placeholder";
 import { NAV_LINKS } from "@/data/site";
 
-function ScrollToTop() {
-  const { pathname } = useLocation();
-  useEffect(() => window.scrollTo(0, 0), [pathname]);
-  return null;
-}
-
 import Category from "@/pages/Category";
 import ProductDetails from "@/pages/ProductDetails";
 import Cart from "@/pages/Cart";
@@ -37,6 +31,12 @@ import AdminCustomerProfile from "@/pages/admin/AdminCustomerProfile";
 import AdminSettings from "@/pages/admin/AdminSettings";
 
 import StylistChat from "@/components/ui/StylistChat";
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => window.scrollTo(0, 0), [pathname]);
+  return null;
+}
 
 export default function App() {
   return (
