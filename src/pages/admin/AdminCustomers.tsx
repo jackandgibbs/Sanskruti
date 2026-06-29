@@ -1,16 +1,33 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { motion } from "motion/react";
+import { supabase } from "@/lib/supabase";
 
 export default function AdminCustomers() {
   const [customers, setCustomers] = useState<any[]>([]);
 
   useEffect(() => {
-    setCustomers([
-      { id: "SK-10045", firstName: "Aditi", lastName: "Sharma", phone: "+91 9876543210", joined: "2026-01-15", totalOrders: 5 },
-      { id: "SK-10046", firstName: "Neha", lastName: "Verma", phone: "+91 8765432109", joined: "2026-02-20", totalOrders: 2 },
-      { id: "SK-10047", firstName: "Priya", lastName: "Menon", phone: "+91 7654321098", joined: "2026-03-10", totalOrders: 1 },
-    ]);
+    // Requires the signed-in user to be flagged is_admin (see RLS in schema.sql).
+    supabase
+      .from("profiles")
+      .select("id, customer_id, first_name, last_name, phone, created_at")
+      .order("created_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Failed to load customers:", error);
+          return;
+        }
+        setCustomers(
+          (data ?? []).map((p) => ({
+            uid: p.id,
+            id: p.customer_id,
+            firstName: p.first_name,
+            lastName: p.last_name,
+            phone: p.phone ? `+91 ${p.phone}` : "—",
+            joined: p.created_at ? new Date(p.created_at).toLocaleDateString("en-IN") : "—",
+          }))
+        );
+      });
   }, []);
 
   return (

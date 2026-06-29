@@ -4,6 +4,8 @@ import { motion } from "motion/react";
 import { toast } from "sonner";
 import { X, Plus, Image as ImageIcon } from "lucide-react";
 import ImageCropperModal from "@/components/ui/ImageCropperModal";
+import { fetchProduct, createProduct, updateProduct } from "@/lib/products";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 export default function AdminProductForm() {
   const navigate = useNavigate();
@@ -53,11 +55,10 @@ export default function AdminProductForm() {
   // Fetch product data if editing
   useEffect(() => {
     if (isEditing) {
-      fetch(`http://localhost:3001/api/products/${id}`)
-        .then(res => res.json())
+      fetchProduct(id!)
         .then(data => {
           if (data) {
-            setFormData(data);
+            setFormData((prev) => ({ ...prev, ...data }));
             const images: string[] = [];
             if (data.image) images.push(data.image);
             if (data.hoverImage) images.push(data.hoverImage);
@@ -84,27 +85,24 @@ export default function AdminProductForm() {
 
   const handleSave = async () => {
     try {
-      const method = isEditing ? "PUT" : "POST";
-      const url = isEditing ? `http://localhost:3001/api/products/${id}` : "http://localhost:3001/api/products";
-      
       const submitData = { ...formData };
       submitData.image = uploadedImages[0] || "";
       submitData.hoverImage = uploadedImages[1] || "";
       submitData.galleryImages = JSON.stringify(uploadedImages.slice(2));
-      
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(submitData),
-      });
-      
-      if (res.ok) {
-        toast.success(isEditing ? "Product updated successfully!" : "Product created successfully!");
-        navigate("/admin/products");
-      } else {
-        const err = await res.json().catch(() => ({}));
-        toast.error(`Failed to save product: ${err.error || res.statusText}`);
+
+      if (!submitData.name || !submitData.image) {
+        toast.error("A product name and at least one image are required.");
+        return;
       }
+
+      if (isEditing) {
+        await updateProduct(id!, submitData);
+      } else {
+        await createProduct(submitData);
+      }
+
+      toast.success(isEditing ? "Product updated successfully!" : "Product created successfully!");
+      navigate("/admin/products");
     } catch (err: any) {
       toast.error(`Error saving product: ${err.message}`);
     }
@@ -119,24 +117,13 @@ export default function AdminProductForm() {
   };
 
   const handleStudioSave = async (blob: Blob) => {
-    const data = new FormData();
-    data.append("image", blob, "product.png");
-    
     toast.loading("Uploading product image...", { id: "prod-upload" });
     try {
-      const res = await fetch("http://localhost:3001/api/upload-product", {
-        method: "POST",
-        body: data,
-      });
-      if (res.ok) {
-        const json = await res.json();
-        setUploadedImages(prev => [...prev, json.url]);
-        toast.success("Image uploaded successfully!", { id: "prod-upload" });
-      } else {
-        toast.error("Upload failed.", { id: "prod-upload" });
-      }
-    } catch (err) {
-      toast.error("Error uploading image.", { id: "prod-upload" });
+      const url = await uploadToCloudinary(blob, "image");
+      setUploadedImages(prev => [...prev, url]);
+      toast.success("Image uploaded successfully!", { id: "prod-upload" });
+    } catch (err: any) {
+      toast.error(err?.message || "Error uploading image.", { id: "prod-upload" });
     } finally {
       setStudioImage(null);
     }

@@ -2,20 +2,20 @@ import { useState, useEffect } from "react";
 import { Product } from "@/data/site";
 import { Link } from "react-router";
 import { motion } from "motion/react";
+import { fetchProducts } from "@/lib/products";
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/products")
-      .then((res) => res.json())
+    fetchProducts()
       .then((data) => {
-        setProducts(data);
+        setProducts(data as Product[]);
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Failed to fetch products from backend:", err);
+        console.error("Failed to fetch products from Supabase:", err);
         setLoading(false);
       });
   }, []);

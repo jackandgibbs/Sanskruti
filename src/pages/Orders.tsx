@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Navigate, Link } from "react-router";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Package, Clock, ArrowLeft } from "lucide-react";
-import { PRODUCTS } from "@/data/site"; 
+import { PRODUCTS } from "@/data/site";
+import { fetchUserOrders } from "@/lib/orders";
 
 export default function Orders() {
   const { user } = useAuthStore();
@@ -11,35 +12,27 @@ export default function Orders() {
 
   useEffect(() => {
     if (!user) return;
-    
-    const fetchOrders = async () => {
-      try {
-        const res = await fetch(`http://localhost:3001/api/orders/user/${user.id}`);
-        const data = await res.json();
-        setOrders(data);
-      } catch (err) {
-        console.error("Failed to fetch orders", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchOrders();
+
+    fetchUserOrders(user.id)
+      .then((data) => setOrders(data))
+      .catch((err) => console.error("Failed to fetch orders", err))
+      .finally(() => setIsLoading(false));
   }, [user]);
 
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
 
-  const getProductImage = (productId: string) => {
-    const product = PRODUCTS.find(p => p.id === productId);
-    return product?.image || "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400";
-  };
+  // Prefer the snapshot stored on the order item; fall back to the mock catalog.
+  const getProductImage = (item: any) =>
+    item.image ||
+    PRODUCTS.find((p) => p.id === item.productId)?.image ||
+    "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400";
 
-  const getProductName = (productId: string) => {
-    const product = PRODUCTS.find(p => p.id === productId);
-    return product?.name || "Premium Product";
-  };
+  const getProductName = (item: any) =>
+    item.name ||
+    PRODUCTS.find((p) => p.id === item.productId)?.name ||
+    "Premium Product";
 
   return (
     <div className="min-h-screen bg-ivory pt-8 pb-24">
@@ -90,9 +83,9 @@ export default function Orders() {
                 <div className="space-y-4">
                   {order.items.map((item: any) => (
                     <div key={item.id} className="flex gap-4">
-                      <img src={getProductImage(item.productId)} alt="" className="w-16 h-20 object-cover" />
+                      <img src={getProductImage(item)} alt="" className="w-16 h-20 object-cover" />
                       <div>
-                        <p className="text-sm font-bold text-forest mb-1 font-body">{getProductName(item.productId)}</p>
+                        <p className="text-sm font-bold text-forest mb-1 font-body">{getProductName(item)}</p>
                         <p className="text-xs text-charcoal/60 uppercase tracking-widest mb-1 font-bold">Qty: {item.quantity}</p>
                         <p className="text-sm font-semibold font-body">₹{(item.price * item.quantity).toLocaleString('en-IN')}</p>
                       </div>

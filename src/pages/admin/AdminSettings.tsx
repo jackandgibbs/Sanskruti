@@ -1,19 +1,32 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import ImageCropperModal from "@/components/ui/ImageCropperModal";
+import { uploadToCloudinary } from "@/lib/cloudinary";
+import { getSetting, setSetting } from "@/lib/siteSettings";
 
 export default function AdminSettings() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
-  
+
+  // Current published media URLs (Cloudinary), with local-file fallbacks.
+  const [heroUrl, setHeroUrl] = useState<string>("/hero.mp4");
+  const [heritageUrl, setHeritageUrl] = useState<string>("/heritage.png");
+  const [festiveUrl, setFestiveUrl] = useState<string>("/festive-banner.png");
+
   // Studio States
   const [studioImage, setStudioImage] = useState<string | null>(null);
   const [studioType, setStudioType] = useState<"heritage" | "festive" | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    getSetting("hero_video").then((v) => v && setHeroUrl(v));
+    getSetting("heritage_image").then((v) => v && setHeritageUrl(v));
+    getSetting("festive_banner").then((v) => v && setFestiveUrl(v));
+  }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -36,27 +49,21 @@ export default function AdminSettings() {
 
   const handleStudioSave = async (blob: Blob) => {
     if (!studioType) return;
-    
-    const formData = new FormData();
-    formData.append("image", blob, `${studioType}.png`);
-    
-    const endpoint = studioType === "heritage" ? "/api/upload-heritage" : "/api/upload-festive";
+
     const toastId = `upload-${studioType}`;
-    
     toast.loading(`Uploading ${studioType} image...`, { id: toastId });
     try {
-      const res = await fetch(`http://localhost:3001${endpoint}`, {
-        method: "POST",
-        body: formData,
-      });
-      if (res.ok) {
-        toast.success(`Successfully published ${studioType} image! Refresh to see changes.`, { id: toastId });
+      const url = await uploadToCloudinary(blob, "image");
+      if (studioType === "heritage") {
+        await setSetting("heritage_image", url);
+        setHeritageUrl(url);
       } else {
-        const errData = await res.json().catch(() => ({}));
-        toast.error(`Upload failed: ${errData.error || res.statusText}`, { id: toastId });
+        await setSetting("festive_banner", url);
+        setFestiveUrl(url);
       }
+      toast.success(`Successfully published ${studioType} image!`, { id: toastId });
     } catch (err: any) {
-      toast.error(`Upload failed: ${err.message === "Failed to fetch" ? "Backend unreachable" : err.message}`, { id: toastId });
+      toast.error(`Upload failed: ${err.message}`, { id: toastId });
     } finally {
       setStudioImage(null);
       setStudioType(null);
@@ -65,32 +72,19 @@ export default function AdminSettings() {
 
   const handleUpload = async () => {
     if (!selectedFile) return;
-    
-    setIsUploading(true);
-    const formData = new FormData();
-    formData.append("video", selectedFile);
 
+    setIsUploading(true);
     try {
-      const res = await fetch("http://localhost:3001/api/upload-hero", {
-        method: "POST",
-        body: formData,
-      });
-      
-      if (res.ok) {
-        setUploadSuccess(true);
-        setSelectedFile(null);
-        toast.success("Hero video published successfully!");
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        toast.error(`Upload failed: ${errData.error || res.statusText}`);
-      }
+      const url = await uploadToCloudinary(selectedFile, "video");
+      await setSetting("hero_video", url);
+      setHeroUrl(url);
+      setUploadSuccess(true);
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      toast.success("Hero video published successfully!");
     } catch (err: any) {
       console.error(err);
-      if (err.message === "Failed to fetch") {
-        toast.error("Upload failed: The backend server is currently offline or unreachable.");
-      } else {
-        toast.error(`Error uploading video: ${err.message}`);
-      }
+      toast.error(`Error uploading video: ${err.message}`);
     } finally {
       setIsUploading(false);
     }
@@ -174,8 +168,8 @@ export default function AdminSettings() {
           <p className="text-sm text-charcoal/60 mb-8">This video plays automatically on the main landing page.</p>
 
           <div className="bg-black/5 rounded-xl border border-black/10 overflow-hidden relative aspect-video flex items-center justify-center">
-            <video 
-              src={previewUrl || "/hero.mp4"} 
+            <video
+              src={previewUrl || heroUrl}
               autoPlay 
               loop 
               muted 
@@ -236,8 +230,8 @@ export default function AdminSettings() {
           <p className="text-sm text-charcoal/60 mb-8">This image appears in the Heritage section on the homepage.</p>
 
           <div className="bg-black/5 rounded-xl border border-black/10 overflow-hidden relative aspect-[4/5] max-w-[240px] mx-auto flex items-center justify-center">
-            <img 
-              src="/heritage.png" 
+            <img
+              src={heritageUrl}
               className="absolute inset-0 w-full h-full object-cover"
               alt="Heritage preview"
             />
@@ -272,8 +266,8 @@ export default function AdminSettings() {
           <p className="text-sm text-charcoal/60 mb-8">This banner appears in the Festive Edition section on the homepage.</p>
 
           <div className="bg-black/5 rounded-xl border border-black/10 overflow-hidden relative aspect-[4/3] max-w-sm mx-auto flex items-center justify-center">
-            <img 
-              src="/festive-banner.png" 
+            <img
+              src={festiveUrl}
               className="absolute inset-0 w-full h-full object-cover"
               alt="Festive preview"
               onError={(e) => {

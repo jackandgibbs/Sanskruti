@@ -1,10 +1,12 @@
 import { Link } from "react-router";
 import { motion } from "motion/react";
 import { banner } from "@/lib/placeholder";
+import { useSetting } from "@/lib/siteSettings";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
 export default function FestiveBanner() {
+  const festiveImage = useSetting("festive_banner", "/festive-banner.png");
   return (
     <section className="bg-forest">
       <div className="mx-auto max-w-[1400px] px-5 lg:px-10">
@@ -18,7 +20,7 @@ export default function FestiveBanner() {
             className="order-first md:order-last"
           >
             <img
-              src="/festive-banner.png"
+              src={festiveImage}
               alt="Festive Collection"
               className="w-full rounded-[6px] object-cover aspect-[4/3] bg-black/10"
               onError={(e) => {

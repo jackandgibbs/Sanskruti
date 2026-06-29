@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { motion } from "motion/react";
 import { banner } from "@/lib/placeholder";
+import { useSetting } from "@/lib/siteSettings";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
@@ -16,11 +17,12 @@ const fadeUp = {
 };
 
 export default function Hero() {
+  const heroVideo = useSetting("hero_video", "/hero.mp4");
   return (
     <section className="relative h-[calc(100vh-110px)] w-full overflow-hidden">
-      {/* Background video - Using the user's uploaded local mp4 file */}
+      {/* Background video — published via Admin → Settings (Cloudinary), local fallback */}
       <video
-        src="/hero.mp4"
+        src={heroVideo}
         autoPlay
         loop
         muted

@@ -4,6 +4,7 @@ import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { CheckCircle2, ChevronRight, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { createOrder } from "@/lib/orders";
 
 export default function Checkout() {
   const { items, getTotal, clearCart } = useCartStore();
@@ -43,28 +44,24 @@ export default function Checkout() {
     setIsProcessing(true);
 
     try {
-      // Create Order in backend
-      const res = await fetch("http://localhost:3001/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user.id,
-          totalAmount,
-          items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price }))
-        }),
+      const order = await createOrder({
+        userId: user.id,
+        totalAmount,
+        items: items.map(i => ({
+          productId: i.productId,
+          quantity: i.quantity,
+          price: i.price,
+          name: i.name,
+          image: i.image,
+        })),
       });
-      
-      const data = await res.json();
-      
-      if (res.ok) {
-        toast.success("Order placed successfully!");
-        clearCart();
-        navigate("/dashboard/orders");
-      } else {
-        toast.error("Failed to place order.");
-      }
-    } catch (err) {
-      toast.error("Network error. Order failed.");
+
+      setOrderId(order.id);
+      toast.success("Order placed successfully!");
+      clearCart();
+      navigate("/dashboard/orders");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to place order.");
     } finally {
       setIsProcessing(false);
     }

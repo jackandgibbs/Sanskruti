@@ -18,6 +18,7 @@ import ProductDetails from "@/pages/ProductDetails";
 import Cart from "@/pages/Cart";
 import Checkout from "@/pages/Checkout";
 import Auth from "@/pages/Auth";
+import AuthCallback from "@/pages/AuthCallback";
 import Dashboard from "@/pages/Dashboard";
 import Orders from "@/pages/Orders";
 import ProfileSettings from "@/pages/ProfileSettings";
@@ -66,6 +67,7 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/dashboard/orders" element={<Orders />} />
                   <Route path="/dashboard/security" element={<ProfileSettings />} />

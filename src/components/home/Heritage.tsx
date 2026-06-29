@@ -1,8 +1,10 @@
 import { Link } from "react-router";
 import { motion } from "motion/react";
 import { panel } from "@/lib/placeholder";
+import { useSetting } from "@/lib/siteSettings";
 
 export default function Heritage() {
+  const heritageImage = useSetting("heritage_image", "/heritage.png");
   return (
     <section className="section-spacing overflow-hidden">
       <div className="max-w-7xl mx-auto px-6">
@@ -16,7 +18,7 @@ export default function Heritage() {
           >
             <div className="overflow-hidden rounded-[var(--radius-card)]">
               <img
-                src="/heritage.png"
+                src={heritageImage}
                 alt="Artisan hand-weaving heritage textile"
                 className="w-full h-[600px] object-cover"
               />
