@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <svg width="400" height="400" viewBox="0 0 100 100">
+    <!-- Scalloped Border (Gold) -->
+    <path id="scallop" fill="none" stroke="#cca341" stroke-width="2.5" />
+    
+    <!-- Vertical Figure 8 -->
+    <path d="M 50 50 C 70 15, 30 15, 50 50 C 30 85, 70 85, 50 50 Z" fill="none" stroke="#2f5d4a" stroke-width="3" />
+    
+    <!-- Horizontal Figure 8 -->
+    <path d="M 50 50 C 85 70, 85 30, 50 50 C 15 30, 15 70, 50 50 Z" fill="none" stroke="#2f5d4a" stroke-width="3" />
+    
+    <!-- Diagonal petals (Top-Right) -->
+    <path d="M 50 50 C 55 40, 65 30, 74 26 C 70 35, 60 45, 50 50 Z" fill="none" stroke="#2f5d4a" stroke-width="3" />
+    <!-- Diagonal petals (Top-Left) -->
+    <path d="M 50 50 C 45 40, 35 30, 26 26 C 30 35, 40 45, 50 50 Z" fill="none" stroke="#2f5d4a" stroke-width="3" />
+    <!-- Diagonal petals (Bottom-Right) -->
+    <path d="M 50 50 C 55 60, 65 70, 74 74 C 70 65, 60 55, 50 50 Z" fill="none" stroke="#2f5d4a" stroke-width="3" />
+    <!-- Diagonal petals (Bottom-Left) -->
+    <path d="M 50 50 C 45 60, 35 70, 26 74 C 30 65, 40 55, 50 50 Z" fill="none" stroke="#2f5d4a" stroke-width="3" />
+  </svg>
+  <script>
+    const cx = 50, cy = 50, numLobes = 12, rInner = 40, rOuter = 46;
+    let d = "";
+    for (let i = 0; i < numLobes; i++) {
+      const a1 = (i * 360) / numLobes * Math.PI / 180;
+      const a2 = ((i + 0.5) * 360) / numLobes * Math.PI / 180;
+      const a3 = ((i + 1) * 360) / numLobes * Math.PI / 180;
+      
+      const x1 = cx + rInner * Math.sin(a1);
+      const y1 = cy - rInner * Math.cos(a1);
+      const x2 = cx + rOuter * Math.sin(a2);
+      const y2 = cy - rOuter * Math.cos(a2);
+      const x3 = cx + rInner * Math.sin(a3);
+      const y3 = cy - rInner * Math.cos(a3);
+      
+      if (i === 0) d += \`M \${x1} \${y1} \`;
+      d += \`Q \${x2} \${y2} \${x3} \${y3} \`;
+    }
+    document.getElementById('scallop').setAttribute('d', d);
+  </script>
+</body>
+</html>

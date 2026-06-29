@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -d node_modules)",
+      "Bash(ls -d dist)",
+      "Bash(npm -v)",
+      "Bash(echo \"npm: $\\(npm -v 2>/dev/null || echo MISSING\\)\")",
+      "Bash(pnpm -v)",
+      "Bash(echo \"pnpm: $\\(pnpm -v 2>/dev/null || echo MISSING\\)\")",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(npm i *)",
+      "Bash(curl -s http://localhost:5174/)",
+      "Bash(curl -s -o /dev/null -w \"main.tsx -> HTTP %{http_code}\\\\n\" http://localhost:5174/src/main.tsx)",
+      "Bash(curl -s -o /dev/null -w \"App.tsx  -> HTTP %{http_code}\\\\n\" http://localhost:5174/src/App.tsx)",
+      "Bash(curl -s -o /dev/null -w \"index.css-> HTTP %{http_code}\\\\n\" http://localhost:5174/src/index.css)",
+      "Bash(curl -s http://localhost:5174/src/components/home/Hero.tsx)"
+    ]
+  }
+}
