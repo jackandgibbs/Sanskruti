@@ -24,6 +24,8 @@ export default function AdminLayout() {
     { name: "Products", href: "/admin/products" },
     { name: "Orders", href: "/admin/orders" },
     { name: "Customers", href: "/admin/customers" },
+    { name: "Analytics", href: "/admin/analytics" },
+    { name: "SEO Health", href: "/admin/seo" },
     { name: "Settings", href: "/admin/settings" },
   ];
 

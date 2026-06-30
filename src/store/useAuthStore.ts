@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useCartStore } from './useCartStore';
+import { useLookbookStore } from './useLookbookStore';
 import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 
@@ -66,8 +67,10 @@ export const useAuthStore = create<AuthState>()(
       login: (user, token) => set({ user, token }),
 
       logout: async () => {
-        // Clear the cart when the user signs out
+        // Clear per-user state when the user signs out so it doesn't leak to the
+        // next person on this device.
         useCartStore.getState().clearCart();
+        useLookbookStore.getState().reset();
         set({ user: null, token: null });
         await supabase.auth.signOut();
       },
@@ -115,7 +118,10 @@ export const useAuthStore = create<AuthState>()(
         supabase.auth.onAuthStateChange((_event, session) => {
           // Re-hydrate on sign-in (incl. Google redirect), token refresh, sign-out.
           void hydrate(session);
-          if (!session) useCartStore.getState().clearCart();
+          if (!session) {
+            useCartStore.getState().clearCart();
+            useLookbookStore.getState().reset();
+          }
         });
       },
     }),

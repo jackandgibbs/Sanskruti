@@ -58,7 +58,23 @@ export default function AdminProductForm() {
       fetchProduct(id!)
         .then(data => {
           if (data) {
-            setFormData((prev) => ({ ...prev, ...data }));
+            // sizes/tags are comma-separated strings in the form, but may come
+            // back from the DB as arrays (or null) — coerce to a string so the
+            // text inputs stay controlled.
+            const toCsv = (v: any) =>
+              Array.isArray(v) ? v.join(", ") : (v ?? "");
+            setFormData((prev) => ({
+              ...prev,
+              ...data,
+              sizes: toCsv(data.sizes),
+              tags: toCsv(data.tags),
+              price: Number(data.price) || 0,
+              mrp: Number(data.mrp) || 0,
+              costPrice: Number(data.costPrice) || 0,
+              taxRate: Number(data.taxRate) || 0,
+              stockCount: Number(data.stockCount) || 0,
+              weightGrams: Number(data.weightGrams) || 0,
+            }));
             const images: string[] = [];
             if (data.image) images.push(data.image);
             if (data.hoverImage) images.push(data.hoverImage);
@@ -108,10 +124,23 @@ export default function AdminProductForm() {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setStudioImage(URL.createObjectURL(file));
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    if (files.length === 1) {
+      setStudioImage(URL.createObjectURL(files[0]));
+    } else {
+      toast.loading(`Uploading ${files.length} images...`, { id: "bulk-upload" });
+      try {
+        const uploadedUrls = await Promise.all(
+          files.map(file => uploadToCloudinary(file, "image"))
+        );
+        setUploadedImages(prev => [...prev, ...uploadedUrls]);
+        toast.success(`Successfully uploaded ${files.length} images!`, { id: "bulk-upload" });
+      } catch (err: any) {
+        toast.error(err?.message || "Error uploading images.", { id: "bulk-upload" });
+      }
     }
     e.target.value = "";
   };
@@ -329,6 +358,7 @@ export default function AdminProductForm() {
                       const input = document.createElement('input');
                       input.type = 'file';
                       input.accept = 'image/*';
+                      input.multiple = true;
                       input.onchange = handleFileSelect as any;
                       input.click();
                     }}

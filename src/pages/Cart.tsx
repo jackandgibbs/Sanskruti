@@ -67,8 +67,12 @@ export default function Cart() {
 
                     <div className="flex justify-between items-end">
                       <div className="flex items-center border border-border">
-                        <button 
-                          onClick={() => updateQuantity(item.productId, item.size, item.quantity - 1)}
+                        <button
+                          onClick={() =>
+                            item.quantity > 1
+                              ? updateQuantity(item.productId, item.size, item.quantity - 1)
+                              : removeItem(item.productId, item.size)
+                          }
                           className="w-8 h-8 flex items-center justify-center text-charcoal/60 hover:text-forest transition-colors"
                         >
                           <Minus size={14} />

@@ -143,6 +143,23 @@ export default function Auth() {
     }
   };
 
+  // --- Forgot password ------------------------------------------------------
+  const handleForgotPassword = async () => {
+    const email = window.prompt(
+      "Enter the email address for your account and we'll send a reset link:"
+    );
+    if (!email) return;
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/auth/reset`,
+      });
+      if (error) throw error;
+      toast.success("If that email has an account, a reset link is on its way.");
+    } catch (err: any) {
+      toast.error(err?.message || "Could not send reset email");
+    }
+  };
+
   // --- Google ---------------------------------------------------------------
   const handleGoogle = async () => {
     setIsLoading(true);
@@ -238,7 +255,16 @@ export default function Auth() {
                   />
                 </div>
                 <div>
-                  <label className={labelClass}>Password</label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className={labelClass + " mb-0"}>Password</label>
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      className="text-[11px] uppercase tracking-widest font-bold text-charcoal/50 hover:text-gold transition-colors"
+                    >
+                      Forgot?
+                    </button>
+                  </div>
                   <PasswordInput
                     value={loginPassword}
                     onChange={(v) => setLoginPassword(v)}

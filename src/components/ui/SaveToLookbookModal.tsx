@@ -18,8 +18,12 @@ export default function SaveToLookbookModal({ isOpen, onClose, product }: SaveTo
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newLookbookName.trim()) return;
-    createLookbook(newLookbookName.trim());
+    const name = newLookbookName.trim();
+    if (!name) return;
+    if (!createLookbook(name)) {
+      toast.error("A lookbook with that name already exists.");
+      return;
+    }
     setNewLookbookName("");
     setIsCreating(false);
   };

@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from "react-router";
-import { useState } from "react";
-import { PRODUCTS } from "@/data/site";
+import { useState, useEffect } from "react";
+import { useProductStore } from "@/store/useProductStore";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "sonner";
@@ -8,19 +8,76 @@ import { ChevronRight, Star, Truck, RefreshCw, ShieldCheck, Heart } from "lucide
 import { cn } from "@/lib/utils";
 import ProductRail from "@/components/home/ProductRail";
 import SaveToLookbookModal from "@/components/ui/SaveToLookbookModal";
+import ProductReviews from "@/components/ui/ProductReviews";
+import { useSeo } from "@/lib/seo";
+import { recordView } from "@/lib/recentlyViewed";
 
 export default function ProductDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const user = useAuthStore(state => state.user);
   
-  const product = PRODUCTS.find(p => p.id === id);
+  const products = useProductStore(state => state.products);
+  const productsLoaded = useProductStore(state => state.loaded);
+  const product = products.find(p => p.id === id);
   const addItem = useCartStore(state => state.addItem);
-  
+
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [activeImage, setActiveImage] = useState<string>(product?.image || "");
   const [isLookbookModalOpen, setIsLookbookModalOpen] = useState(false);
   const [zoomStyle, setZoomStyle] = useState({});
+
+  // Sync the main image once the product resolves (the catalog may load async).
+  useEffect(() => {
+    if (product?.image) setActiveImage(product.image);
+  }, [product?.id]);
+
+  // Track recently-viewed for the dashboard rail.
+  useEffect(() => {
+    if (product) recordView(product);
+  }, [product?.id]);
+
+  useSeo({
+    title: product?.name,
+    description: product
+      ? product.description ||
+        `${product.name} — ${product.fabric || "premium"} ${product.category} from Sanskruti.`
+      : undefined,
+    image: product?.image,
+    jsonLd: product
+      ? {
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: product.name,
+          image: [product.image, product.hoverImage].filter(Boolean),
+          description: product.description,
+          category: product.category,
+          sku: product.sku,
+          brand: { "@type": "Brand", name: "Sanskruti" },
+          aggregateRating:
+            product.reviews > 0
+              ? { "@type": "AggregateRating", ratingValue: product.rating, reviewCount: product.reviews }
+              : undefined,
+          offers: {
+            "@type": "Offer",
+            priceCurrency: "INR",
+            price: product.price,
+            availability: product.inStock
+              ? "https://schema.org/InStock"
+              : "https://schema.org/OutOfStock",
+          },
+        }
+      : null,
+  });
+
+  // The catalog can still be loading from Supabase — don't flash "not found".
+  if (!product && !productsLoaded) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center bg-ivory">
+        <p className="text-charcoal/50 font-medium tracking-wide">Loading product...</p>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -33,14 +90,21 @@ export default function ProductDetails() {
     );
   }
 
-  const images = [product.image, product.hoverImage, product.image, product.hoverImage].filter(Boolean) as string[];
+  const images = [...new Set([product.image, product.hoverImage, ...(product.galleryImages || [])].filter(Boolean))] as string[];
 
   const handleAddToCart = () => {
     if (!user) {
       toast.error("Authentication Required", {
         description: "Please log in or sign up to add items to your cart."
       });
-      navigate("/auth", { state: { returnUrl: `/product/${id}` } });
+      navigate("/auth", { state: { from: { pathname: `/product/${id}` } } });
+      return;
+    }
+
+    if (!product.inStock) {
+      toast.error("Out of Stock", {
+        description: "This piece is currently unavailable.",
+      });
       return;
     }
 
@@ -85,7 +149,7 @@ export default function ProductDetails() {
     });
   };
 
-  const relatedProducts = PRODUCTS.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
+  const relatedProducts = products.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
 
   return (
     <div className="min-h-screen bg-ivory pt-8 pb-20">
@@ -162,6 +226,23 @@ export default function ProductDetails() {
               {product.description || "Experience the pinnacle of elegance with this beautifully crafted piece from Sanskruti. Made with premium materials and showcasing exquisite attention to detail."}
             </p>
 
+            {/* Stock status */}
+            <div className="mb-8">
+              {!product.inStock ? (
+                <span className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-red-600">
+                  <span className="w-2 h-2 rounded-full bg-red-500" /> Out of Stock
+                </span>
+              ) : product.stockCount != null && product.stockCount <= 5 ? (
+                <span className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-amber-600">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" /> Only {product.stockCount} left — order soon
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-forest">
+                  <span className="w-2 h-2 rounded-full bg-forest" /> In Stock
+                </span>
+              )}
+            </div>
+
             {/* Sizes */}
             {product.sizes.length > 0 && (
               <div className="mb-8">
@@ -189,17 +270,18 @@ export default function ProductDetails() {
             )}
 
             <div className="flex gap-4 mb-8">
-              <button 
+              <button
                 onClick={handleAddToCart}
-                className="flex-1 h-14 bg-forest text-ivory uppercase tracking-[0.2em] font-bold text-sm hover:bg-gold transition-colors"
+                disabled={!product.inStock}
+                className="flex-1 h-14 bg-forest text-ivory uppercase tracking-[0.2em] font-bold text-sm hover:bg-gold transition-colors disabled:bg-charcoal/30 disabled:cursor-not-allowed disabled:hover:bg-charcoal/30"
               >
-                Add to Cart
+                {product.inStock ? "Add to Cart" : "Out of Stock"}
               </button>
               <button 
                 onClick={() => {
                   if (!user) {
                     toast.error("Authentication Required", { description: "Please log in to use Lookbooks." });
-                    navigate("/auth", { state: { returnUrl: `/product/${id}` } });
+                    navigate("/auth", { state: { from: { pathname: `/product/${id}` } } });
                     return;
                   }
                   setIsLookbookModalOpen(true);
@@ -229,6 +311,9 @@ export default function ProductDetails() {
             
           </div>
         </div>
+
+        {/* Reviews */}
+        <ProductReviews productId={product.id} />
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (

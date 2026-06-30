@@ -1,9 +1,9 @@
-import { TRENDING } from "@/data/site";
 import SectionHeading from "@/components/ui/SectionHeading";
 import ProductCard from "@/components/ui/ProductCard";
+import { useProductStore } from "@/store/useProductStore";
 
 export default function TrendingGrid() {
-  const products = TRENDING.slice(0, 8);
+  const products = useProductStore((state) => state.products).slice(0, 8);
 
   return (
     <section className="section-spacing">

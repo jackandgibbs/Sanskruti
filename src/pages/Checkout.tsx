@@ -45,14 +45,23 @@ export default function Checkout() {
 
     try {
       const order = await createOrder({
-        userId: user.id,
         totalAmount,
+        paymentMethod: "COD",
+        shipping: {
+          name: `${user.firstName} ${user.lastName}`.trim(),
+          phone: user.phone,
+          street: address.street,
+          city: address.city,
+          state: address.state,
+          zip: address.zip,
+        },
         items: items.map(i => ({
           productId: i.productId,
           quantity: i.quantity,
           price: i.price,
           name: i.name,
           image: i.image,
+          size: i.size,
         })),
       });
 

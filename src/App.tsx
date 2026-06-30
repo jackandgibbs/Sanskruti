@@ -18,6 +18,9 @@ import Orders from "@/pages/Orders";
 import ProfileSettings from "@/pages/ProfileSettings";
 import Addresses from "@/pages/Addresses";
 import Lookbooks from "@/pages/Lookbooks";
+import Search from "@/pages/Search";
+import RecentlyViewed from "@/pages/RecentlyViewed";
+import ResetPassword from "@/pages/ResetPassword";
 
 import IntroLoader from "@/components/ui/IntroLoader";
 
@@ -29,6 +32,8 @@ import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminCustomers from "@/pages/admin/AdminCustomers";
 import AdminCustomerProfile from "@/pages/admin/AdminCustomerProfile";
 import AdminSettings from "@/pages/admin/AdminSettings";
+import AdminAnalytics from "@/pages/admin/AdminAnalytics";
+import AdminSeoReport from "@/pages/admin/AdminSeoReport";
 
 import StylistChat from "@/components/ui/StylistChat";
 
@@ -54,6 +59,8 @@ export default function App() {
           <Route path="orders" element={<AdminOrders />} />
           <Route path="customers" element={<AdminCustomers />} />
           <Route path="customers/:id" element={<AdminCustomerProfile />} />
+          <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="seo" element={<AdminSeoReport />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 
@@ -68,6 +75,7 @@ export default function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
+                  <Route path="/auth/reset" element={<ResetPassword />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/dashboard/orders" element={<Orders />} />
                   <Route path="/dashboard/security" element={<ProfileSettings />} />
@@ -78,10 +86,11 @@ export default function App() {
                   <Route path="/dashboard/membership" element={<Placeholder title="Sanskruti Elite" />} />
                   <Route path="/dashboard/gift-cards" element={<Placeholder title="Gift Cards & Vouchers" />} />
                   <Route path="/dashboard/messages" element={<Placeholder title="Your Messages" />} />
-                  <Route path="/dashboard/history" element={<Placeholder title="Recently Viewed" />} />
+                  <Route path="/dashboard/history" element={<RecentlyViewed />} />
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/product/:id" element={<ProductDetails />} />
+                  <Route path="/search" element={<Search />} />
                   
                   {NAV_LINKS.filter((l) => !["/", "/about", "/contact"].includes(l.to)).map((l) => (
                     <Route key={l.to} path={l.to} element={<Category />} />

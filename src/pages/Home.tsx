@@ -8,20 +8,51 @@ import ShopByLook from "@/components/home/ShopByLook";
 import Reviews from "@/components/home/Reviews";
 import InstagramGallery from "@/components/home/InstagramGallery";
 import Newsletter from "@/components/home/Newsletter";
-import { BEST_SELLERS, NEW_ARRIVALS } from "@/data/site";
+import { useProductStore } from "@/store/useProductStore";
+import { useSeo } from "@/lib/seo";
+import { getFavoriteCategory, useRecentlyViewed } from "@/lib/recentlyViewed";
 
 export default function Home() {
+  useSeo({
+    title: "Handcrafted Heritage Weaves",
+    description:
+      "Sanskruti — premium handcrafted sarees, lehengas, kurtis and bridal couture. Free shipping, 15-day returns.",
+  });
+
+  const products = useProductStore((state) => state.products);
+  const bestSellers = products.filter((p) => p.bestSeller);
+  const newArrivals = products.filter((p) => p.newArrival);
+  
+  // Call useRecentlyViewed to ensure re-renders when favorites change
+  useRecentlyViewed();
+  const favCategory = getFavoriteCategory();
+  const recommended = favCategory ? products.filter(p => p.category === favCategory) : [];
+
+  // Fall back to the full catalog if nothing is flagged, so the rails are never empty.
+  const bestSellerRail = bestSellers.length > 0 ? bestSellers : products;
+  const newArrivalRail = newArrivals.length > 0 ? newArrivals : products;
+  const recommendedRail = recommended.length > 0 ? recommended : bestSellerRail;
+
   return (
     <>
       <Hero />
       <FeaturedCategories />
       <TrendingGrid />
       <Heritage />
+      {favCategory && recommended.length > 0 && (
+        <ProductRail
+          eyebrow="Just For You"
+          title="Recommended For You"
+          subtitle={`Curated selections based on your interest in ${favCategory}.`}
+          products={recommendedRail}
+          to={`/${favCategory.toLowerCase()}`}
+        />
+      )}
       <ProductRail
         eyebrow="Tried & Adored"
         title="Best Sellers"
         subtitle="The pieces our customers reach for again and again."
-        products={BEST_SELLERS}
+        products={bestSellerRail}
         to="/sarees"
       />
       <FestiveBanner />
@@ -29,7 +60,7 @@ export default function Home() {
         eyebrow="Fresh Off the Loom"
         title="New Arrivals"
         subtitle="The latest additions to the Sanskruti wardrobe."
-        products={NEW_ARRIVALS}
+        products={newArrivalRail}
         to="/new-arrivals"
       />
       <ShopByLook />

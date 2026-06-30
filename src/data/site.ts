@@ -14,10 +14,12 @@ export type Product = {
   hoverImage: string;
   tag?: string;
   inStock: boolean;
+  stockCount?: number;
   bestSeller?: boolean;
   newArrival?: boolean;
   sku?: string;
   description?: string;
+  galleryImages?: string[];
 };
 
 export const NAV_LINKS = [
@@ -75,7 +77,7 @@ export const PRODUCTS: Product[] = NAMES.map((name, i) => {
     category: CATS[i % CATS.length],
     price,
     mrp: price < mrp ? mrp : undefined,
-    rating: +(4.3 + ((i * 7) % 7) / 10).toFixed(1),
+    rating: +(4.3 + ((i * 17) % 7) / 10).toFixed(1),
     reviews: 24 + ((i * 53) % 480),
     fabric: FABRICS[i % FABRICS.length],
     sizes: ["XS", "S", "M", "L", "XL", "Free"].slice(0, 4 + (i % 3)),

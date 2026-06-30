@@ -2,26 +2,83 @@ import { useState, useEffect } from "react";
 import { Product } from "@/data/site";
 import { Link } from "react-router";
 import { motion } from "motion/react";
-import { fetchProducts } from "@/lib/products";
+import { toast } from "sonner";
+import { fetchProducts, deleteProduct } from "@/lib/products";
+import { fetchAllOrders } from "@/lib/orders";
+import { subDays, isAfter, startOfDay } from "date-fns";
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [salesVelocity, setSalesVelocity] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchProducts()
-      .then((data) => {
-        setProducts(data as Product[]);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch products from Supabase:", err);
-        setLoading(false);
-      });
+    async function load() {
+       try {
+          const [prodData, orders] = await Promise.all([
+             fetchProducts(),
+             fetchAllOrders()
+          ]);
+          setProducts(prodData as Product[]);
+
+          // Calculate sales velocity (units sold in last 30 days)
+          const velocity: Record<string, number> = {};
+          const thirtyDaysAgo = startOfDay(subDays(new Date(), 30));
+          
+          orders.forEach((o: any) => {
+             if (o.status === "CANCELLED") return;
+             if (isAfter(new Date(o.createdAt), thirtyDaysAgo)) {
+                o.items?.forEach((item: any) => {
+                   velocity[item.productId] = (velocity[item.productId] || 0) + item.quantity;
+                });
+             }
+          });
+          setSalesVelocity(velocity);
+       } catch (err) {
+          console.error("Failed to load products/orders", err);
+       } finally {
+          setLoading(false);
+       }
+    }
+    load();
   }, []);
 
+  const handleDelete = async (product: Product) => {
+    if (!confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
+    setDeletingId(product.id);
+    try {
+      await deleteProduct(product.id);
+      setProducts((prev) => prev.filter((p) => p.id !== product.id));
+      toast.success("Product deleted");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete product");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const getStockHealth = (product: Product) => {
+     if (!product.inStock || product.stockCount === 0) return { label: "Out of Stock", color: "text-red-600 bg-red-100/50 border-red-200" };
+     
+     const unitsSold30d = salesVelocity[product.id] || 0;
+     const dailyVelocity = unitsSold30d / 30;
+     
+     if (dailyVelocity === 0) return { label: "In Stock (No recent sales)", color: "text-green-700 bg-green-100/50 border-green-200" };
+     
+     const daysRemaining = (product.stockCount || 0) / dailyVelocity;
+     
+     if (daysRemaining < 14) {
+        return { label: `Critical: ~${daysRemaining.toFixed(0)} days left`, color: "text-red-700 bg-red-100 border-red-300 font-bold" };
+     } else if (daysRemaining < 30) {
+        return { label: `Low: ~${daysRemaining.toFixed(0)} days left`, color: "text-amber-700 bg-amber-100 border-amber-300" };
+     }
+     
+     return { label: `Healthy (~${daysRemaining.toFixed(0)} days)`, color: "text-green-700 bg-green-100/50 border-green-200" };
+  };
+
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 pb-20">
       <motion.header 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -30,7 +87,7 @@ export default function AdminProducts() {
       >
         <div>
           <h1 className="text-5xl font-heading text-[#1a3326] tracking-tight">Product Inventory</h1>
-          <p className="text-charcoal/60 mt-3 text-lg font-medium tracking-wide">Manage your luxury boutique collection.</p>
+          <p className="text-charcoal/60 mt-3 text-lg font-medium tracking-wide">Manage your luxury boutique collection and forecast stock.</p>
         </div>
         <Link 
           to="/admin/products/new" 
@@ -47,7 +104,7 @@ export default function AdminProducts() {
         className="bg-white/60 backdrop-blur-xl rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 overflow-hidden"
       >
         {loading ? (
-          <div className="p-20 text-center text-charcoal/50 font-medium tracking-wide">Loading inventory...</div>
+          <div className="p-20 text-center text-charcoal/50 font-medium tracking-wide">Loading inventory & forecasting...</div>
         ) : (
           <table className="w-full text-left">
             <thead className="bg-[#1a3326] text-ivory/90 text-sm tracking-widest uppercase">
@@ -55,7 +112,7 @@ export default function AdminProducts() {
                 <th className="p-6 font-medium">Product</th>
                 <th className="p-6 font-medium">Category</th>
                 <th className="p-6 font-medium">Price</th>
-                <th className="p-6 font-medium">Status</th>
+                <th className="p-6 font-medium">Stock Health (30d Forecast)</th>
                 <th className="p-6 font-medium text-right">Actions</th>
               </tr>
             </thead>
@@ -67,7 +124,9 @@ export default function AdminProducts() {
                   </td>
                 </tr>
               ) : (
-                products.map((product) => (
+                products.map((product) => {
+                   const health = getStockHealth(product);
+                   return (
                   <tr key={product.id} className="hover:bg-white/80 transition-colors group">
                     <td className="p-6 flex items-center gap-5">
                       {product.image ? (
@@ -90,22 +149,29 @@ export default function AdminProducts() {
                       {product.mrp && <span className="block text-xs text-charcoal/40 line-through">₹{product.mrp.toLocaleString()}</span>}
                     </td>
                     <td className="p-6">
-                      <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-                        product.inStock ? "bg-green-100/50 text-green-700 border border-green-200" : "bg-red-100/50 text-red-700 border border-red-200"
-                      }`}>
-                        {product.inStock ? "In Stock" : "Out of Stock"}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold tracking-wider inline-flex w-max border ${health.color}`}>
+                          {health.label}
+                        </span>
+                        <span className="text-xs text-charcoal/50 font-medium pl-1">
+                          Current Stock: {product.stockCount || 0}
+                        </span>
+                      </div>
                     </td>
                     <td className="p-6 text-right">
                       <Link to={`/admin/products/edit/${product.id}`} className="text-gold hover:text-forest transition-colors font-bold text-xs uppercase tracking-widest mr-5">
                         Edit
                       </Link>
-                      <button className="text-red-500 hover:text-red-700 transition-colors font-bold text-xs uppercase tracking-widest opacity-0 group-hover:opacity-100">
-                        Delete
+                      <button
+                        onClick={() => handleDelete(product)}
+                        disabled={deletingId === product.id}
+                        className="text-red-500 hover:text-red-700 transition-colors font-bold text-xs uppercase tracking-widest opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                      >
+                        {deletingId === product.id ? "Deleting…" : "Delete"}
                       </button>
                     </td>
                   </tr>
-                ))
+                )})
               )}
             </tbody>
           </table>

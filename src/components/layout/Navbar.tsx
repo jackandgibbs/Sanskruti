@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Menu, X, Search, Heart, User, ShoppingBag, Package, ShieldCheck, MapPin, HeadphonesIcon, CreditCard, Crown, Gift, MessageSquare, History, ChevronDown, LogOut } from "lucide-react";
-import { NAV_LINKS, PRODUCTS, Product } from "@/data/site";
+import { NAV_LINKS, Product } from "@/data/site";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useProductStore } from "@/store/useProductStore";
+import { searchProducts, useDebounced } from "@/lib/search";
 
 const ANNOUNCEMENT_MESSAGES = [
   "FREE SHIPPING ON ORDERS ABOVE ₹999",
@@ -40,25 +42,37 @@ export default function Navbar() {
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
 
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const allProducts = useProductStore((state) => state.products);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchCategoryRef = useRef<HTMLDivElement>(null);
 
   const SEARCH_CATEGORIES = ["All Categories", "Sarees", "Lehengas", "Kurtis", "Festive", "Wedding", "Designer"];
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setSearchQuery(val);
-    if (val.trim().length > 1) {
-      const filtered = PRODUCTS.filter(p => 
-        (p.name.toLowerCase().includes(val.toLowerCase()) ||
-        p.category.toLowerCase().includes(val.toLowerCase()) ||
-        (p.fabric && p.fabric.toLowerCase().includes(val.toLowerCase()))) &&
-        (selectedCategory === "All Categories" || p.category.toLowerCase() === selectedCategory.toLowerCase())
-      ).slice(0, 5);
-      setSearchResults(filtered);
-    } else {
-      setSearchResults([]);
+    setSearchQuery(e.target.value);
+  };
+
+  // Debounced live suggestions for the dropdown.
+  const debouncedQuery = useDebounced(searchQuery, 250);
+  useEffect(() => {
+    const q = debouncedQuery.trim();
+    setSearchResults(q.length > 1 ? searchProducts(allProducts, q, selectedCategory).slice(0, 5) : []);
+  }, [debouncedQuery, selectedCategory, allProducts]);
+
+  const submitSearch = () => {
+    const q = searchQuery.trim();
+    if (!q) return;
+    setSearchResults([]);
+    setShowSearchOverlay(false);
+    navigate(`/search?q=${encodeURIComponent(q)}`);
+  };
+
+  const onSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      submitSearch();
     }
   };
 
@@ -196,14 +210,15 @@ export default function Navbar() {
                   </AnimatePresence>
                 </div>
 
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  placeholder="Search for premium ethnic wear..." 
+                  onKeyDown={onSearchKeyDown}
+                  placeholder="Search for premium ethnic wear..."
                   className="flex-1 h-full px-4 outline-none text-sm font-body text-charcoal bg-white"
                 />
-                <button className="h-full px-6 bg-forest text-ivory hover:bg-gold transition-colors flex items-center justify-center">
+                <button onClick={submitSearch} aria-label="Search" className="h-full px-6 bg-forest text-ivory hover:bg-gold transition-colors flex items-center justify-center">
                   <Search size={20} strokeWidth={2} />
                 </button>
                 {searchResults.length > 0 && (
@@ -372,6 +387,7 @@ export default function Navbar() {
                     type="text"
                     value={searchQuery}
                     onChange={handleSearchChange}
+                    onKeyDown={onSearchKeyDown}
                     placeholder="Search..."
                     autoFocus
                     className="w-32 sm:w-48 outline-none text-xs font-body text-charcoal bg-white pr-6"
